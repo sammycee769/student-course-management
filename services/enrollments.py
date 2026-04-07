@@ -1,4 +1,3 @@
-from urllib import request
 
 from database import enrollments_collections
 from models import Role, Enrollment
@@ -12,7 +11,7 @@ def enroll_student(request:EnrollCourse):
     get_course(request.course_title)
     __duplicate_course_validation(request)
     new_enrollment = Enrollment(
-        student_email=str(request.student_email),
+        student_username =request.student_username,
         course_title=request.course_title
     )
     enrollments_collections.insert_one(__convert_to_dict(new_enrollment))
@@ -25,7 +24,7 @@ def get_student_courses(student_username:str):
 def get_courses_by_students(course_title:str):
     get_course(course_title)
     enrollments = enrollments_collections.find({"course_title": course_title})
-    return [__convert_from_dict(enrollment).student_email for enrollment in enrollments]
+    return [__convert_from_dict(enrollment).student_username for enrollment in enrollments]
 def __student_validation(enrollment_request:EnrollCourse):
     student = get_user(str(enrollment_request.student_username))
     if student.role != Role.STUDENT:
@@ -40,7 +39,7 @@ def __duplicate_course_validation(request:EnrollCourse):
 
 def __convert_to_dict(enrollment: Enrollment):
     return {
-        "student_email": enrollment.student_email,
+        "student_username": enrollment.student_username,
         "course_title": enrollment.course_title
     }
 

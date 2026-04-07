@@ -13,7 +13,7 @@ class UpdateUser(BaseModel):
     role: Optional[Role] = None
 class EnrollCourse(BaseModel):
     course_title: str = Field(...,min_length=5,max_length=50)
-    student_email:EmailStr
+    student_username: str = Field(...,min_length=3,max_length=50)
 class CreateCourse(BaseModel):
     title: str = Field(...,min_length=1,max_length=50)
     description: str = Field(...,min_length=1,max_length=250)

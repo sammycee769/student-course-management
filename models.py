@@ -29,7 +29,7 @@ class Course(BaseModel):
 
 
 class Enrollment(BaseModel):
-    student_email: str
+    student_username: str
     course_title: str
 
 class Grade(BaseModel):
