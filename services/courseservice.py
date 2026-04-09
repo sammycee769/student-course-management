@@ -1,45 +1,65 @@
-from database import courses_collection
-from models import Role, Course
+from models.course import Course
+from models.role import Role
 from schemas import CreateCourse
 from services.userservice import get_user
+from repositories import course_repository
+from exceptions.course_exceptions import (
+    CourseNotFoundException,
+    CourseAlreadyExistsException,
+    UnauthorizedCourseActionException
+)
 
-course_db = []
 
-def create_course(request:CreateCourse):
+def create_course(request: CreateCourse):
     __validate_role(request)
-    __duplicate_course_validation(request)
+    __validate_duplicate_course(request)
 
     new_course = Course(
         title=request.title,
         description=request.description,
         facilitator_username=request.facilitator_username,
     )
-    courses_collection.insert_one(__convert_to_dict(new_course))
+
+    course_repository.save(__convert_to_dict(new_course))
     return new_course
 
-def get_all_courses(username:str):
+
+def get_all_courses(username: str):
     get_user(username)
-    courses = courses_collection.find()
+
+    courses = course_repository.find_all()
     return [__convert_from_dict(course) for course in courses]
 
-def get_courses_by_facilitator(username:str):
+
+def get_courses_by_facilitator(username: str):
     get_user(username)
-    courses = courses_collection.find({"facilitator_username": username})
-    return [  __convert_from_dict(course) for course in courses  ]
+
+    courses = course_repository.find_by_facilitator(username)
+    return [__convert_from_dict(course) for course in courses]
+
 
 def get_course(title: str):
-    course = courses_collection.find_one({"title": title})
-    if course :
-        return __convert_to_dict(course)
-    raise Exception("Course not found")
+    course = course_repository.find_by_title(title)
 
-def __duplicate_course_validation(request:CreateCourse):
-    if courses_collection.find_one({ "title": request.title }) :
-        raise Exception('Course already exists')
-def __validate_role(request:CreateCourse):
+    if course:
+        return __convert_from_dict(course)
+
+    raise CourseNotFoundException("Course not found")
+
+
+def __validate_duplicate_course(request: CreateCourse):
+    if course_repository.find_by_title(request.title):
+        raise CourseAlreadyExistsException("Course already exists")
+
+
+def __validate_role(request: CreateCourse):
     facilitator = get_user(request.facilitator_username)
+
     if facilitator.role != Role.FACILITATOR:
-        raise Exception("Only facilitator can create course")
+        raise UnauthorizedCourseActionException(
+            "Only facilitators can create courses"
+        )
+
 
 def __convert_to_dict(course: Course):
     return {
@@ -47,6 +67,7 @@ def __convert_to_dict(course: Course):
         "description": course.description,
         "facilitator_username": course.facilitator_username
     }
+
 
 def __convert_from_dict(data):
     return Course(
